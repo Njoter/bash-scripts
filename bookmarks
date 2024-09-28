@@ -1,0 +1,44 @@
+#!/bin/bash
+
+
+file="$HOME/Documents/bookmarks/bookmarks.txt"
+
+
+add () {
+
+    echo $OPTARG >> $file
+}
+
+remove () {
+
+    index=$(cat -n $file                        \
+        | fzf --with-nth 2.. --layout=reverse   \
+        | awk '{print $1}')
+
+    if [ -z "${index}" ];
+    then
+        echo "No lines removed"
+        exit 1
+    fi
+
+    sed -i "${index}d" $file
+    echo "Bookmark removed"
+}
+
+
+while getopts ":a:r" option; do
+    case $option in
+        a)  # Append bookmark to file
+            add
+            exit;;
+        r)  # Remove bookmark from file
+            remove
+            exit;;
+        \?) # Invalid option
+            echo "Error: Invalid option"
+            exit;;
+    esac
+done
+
+
+xdg-open $(cat $file | fzf --layout=reverse)

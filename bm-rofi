@@ -1,0 +1,8 @@
+#!/bin/bash
+
+string=$(cat ~/Documents/bookmarks/bookmarks.txt | rofi -dmenu)
+
+if [ "$string" != "" ]
+then
+    firefox $string
+fi

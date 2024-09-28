@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# --------------------------------------
+# This script cycles through all available audio sinks
+# --------------------------------------------------
+
+if [[ $# == 1 ]]
+then
+    if [[ $1 == "-m" ]]
+    then
+        pactl set-default-sink $(pactl list sinks	\
+	| grep Name: 					\
+	| sed 's/Name: //' 				\
+	| sed 's/^[ \t]*//'				\
+	| rofi -dmenu)
+    else
+	echo "Usage: change-sink (-m)"
+        exit 1
+    fi
+fi
+
+if [[ $# != 0 ]]
+then
+    echo "Usage: change-sink (-m)"
+    exit 1
+fi
+
+currentSink=$(pactl get-default-sink)
+
+# list all sinks and save them in a string
+sinksString=$(pactl list sinks | grep Name:)
+
+# remove all instances of "Name: " from string
+sinksString=$(sed 's/Name: //' <<< $sinksString)
+
+# split string and put all sinks in array
+sinksArray=($sinksString)
+length=${#sinksArray[@]}
+
+i=0
+while [[ $i < $length ]]
+do
+    if [[ $currentSink == ${sinksArray[$i]} ]]
+    then
+        if [[ $i == $(( length - 1 )) ]]
+        then
+            pactl set-default-sink ${sinksArray[0]}
+        else
+            pactl set-default-sink ${sinksArray[$i + 1]}
+        fi
+	pactl get-default-sink
+    fi
+    i=$(( $i + 1 ))
+done

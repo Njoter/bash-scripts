@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+upString="+5%"
+downString="-5%"
+
+getSink="pactl get-default-sink"
+setVolume="pactl set-sink-volume"
+getVolume="pactl get-sink-volume $($getSink)"
+
+
+if [[ $# != 1 ]]
+then
+    echo "Usage: set-volume (-up|-down)"
+    exit 1
+fi
+
+if [[ $1 == "-up" ]]
+then
+    $setVolume $($getSink) $upString
+    $getVolume
+elif [[ $1 == "-down" ]]
+then
+    $setVolume $($getSink) $downString
+    $getVolume
+fi
+
