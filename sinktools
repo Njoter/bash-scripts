@@ -104,7 +104,6 @@ validate-volume () {
 mute () {
 
     isMuted=$(pactl get-sink-mute $currentSink)
-    echo $#
     
     if [[ $# == 0 ]]
     then
@@ -125,6 +124,7 @@ mute () {
     fi
 
     pactl set-sink-mute $currentSink $muteState
+    pactl get-sink-mute $currentSink
 }
 
 

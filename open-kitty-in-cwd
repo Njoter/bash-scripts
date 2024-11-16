@@ -1,0 +1,10 @@
+#!/bin/bash                                                                
+
+CLASSNAME=$(xdotool getactivewindow getwindowclassname)
+if [ "$CLASSNAME" == 'kitty' ]
+then
+  FOCUSED_WINDOW_PID=$(xdotool getactivewindow getwindowpid)
+  FOCUSED_WINDOW_CHILD_PID=$(pgrep -P $FOCUSED_WINDOW_PID)
+  CWD="/proc/$FOCUSED_WINDOW_CHILD_PID/cwd"
+  alacritty --working-directory $CWD
+fi
