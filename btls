@@ -1,0 +1,47 @@
+#!/bin/bash
+
+progName="btls"
+
+args=("$@")
+argsLength=${#args[@]}
+
+usageMsg="Usage: $progName [-c | -d]"
+
+
+
+connect () {
+
+    device=$(bluetoothctl devices | rofi -dmenu)
+    macAdress="$(cut -d ' ' -f 2 <<< $device)"
+    bluetoothctl connect $macAdress
+
+}
+
+
+disconnect () {
+
+    device=$(bluetoothctl devices | rofi -dmenu)
+    macAdress="$(cut -d ' ' -f 2 <<< $device)"
+    bluetoothctl disconnect $macAdress
+
+}
+
+
+if [[ $argsLength -lt 1 ]]
+then
+    echo $usageMsg
+    exit 1
+fi
+
+if [[ ${args[0]} == "-c" ]]
+then
+    connect
+    exit 0
+fi
+
+if [[ ${args[0]} == "-d" ]]
+then
+    disconnect
+    exit 0
+fi
+
