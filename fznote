@@ -1,0 +1,150 @@
+#!/bin/bash
+
+program_name="fznote"
+dir="$HOME/Documents/notes/"
+reader="bat"
+no_notes_message="You have no notes. Create one with $program_name -a [filename]"
+no_selection_message="No file selected."
+
+
+add () {
+    if [ -f "$dir$1" ]
+    then
+        echo "$1 already exists."
+    else
+        $EDITOR "$dir$1"
+    fi
+}
+
+
+view () {
+
+    if directory_empty
+    then
+        echo $no_notes_message
+        return
+    fi
+
+    file=$(echo $dir$(list_files))
+    if file_selected $file
+    then
+        $reader "$file"
+    else
+        echo $no_selection_message
+    fi
+}
+
+
+edit () {
+
+    if directory_empty
+    then
+        echo $no_notes_message
+        return
+    fi
+
+    file=$(echo $dir$(list_files))
+    if file_selected $file
+    then
+        $EDITOR "$file"
+    else
+        echo $no_selection_message
+    fi
+}
+
+
+remove () {
+
+    if directory_empty
+    then
+        echo $no_notes_message
+        return
+    fi
+
+    file=$(echo $dir$(list_files))
+    if file_selected "$file"
+    then
+        if yes_or_no "$file"
+        then
+            rm "$file"
+        fi
+    else
+        echo $no_selection_message
+    fi
+}
+
+
+list_files () {
+    \ls $dir | xargs -d '\n' -n 1 | fzf --preview "cat $dir{}" --layout=reverse
+}
+
+
+directory_empty () {
+    count=$(\ls -A $dir | wc -l)
+    if [ $count -eq 0 ]
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+file_selected () {
+    if [ "$1" = "$dir" ]
+    then
+        false
+        return
+    else
+        true
+        return
+    fi
+}
+
+
+yes_or_no () {
+    while true; do
+        read -p "Are you sure you want to delete $1? [y/n]: " yn
+        case $yn in
+            [Yy]*) return 0;;
+            [Nn]*) return 1;;
+        esac
+    done
+}
+
+
+while getopts ":a:ver" option; do
+    case $option in
+        a)  # Add new note
+            add "$OPTARG"
+            exit;;
+        v)  # View file in reader
+            view
+            exit;;
+        e)  # Edit note
+            edit
+            exit;;
+        r)  # Remove note
+            remove
+            exit;;
+        :)  # Error message for options that require an argument
+            echo "$program_name -${OPTARG} requires an argument"
+            exit 1;;
+        \?) # Invalid option
+            echo "Invalid option: -${OPTARG}"
+            exit 1;;
+    esac
+done
+
+
+if directory_empty
+then
+    echo $no_notes_message
+    exit
+fi
+
+file=$(echo $dir$(list_files))
+if file_selected $file
+then
+    cat "$file"
+fi
