@@ -1,31 +1,24 @@
 #!/bin/bash
 
-program_name="fznote"
-dir="$HOME/Documents/notes/"
-reader="bat"
+program_name=$(basename "$0")
 no_notes_message="You have no notes. Create one with $program_name -a [filename]"
 no_selection_message="No file selected."
 
+source ~/.config/fznote/fznote.conf
+
 
 add () {
-    if [ -f "$dir$1" ]
+    if [ -f "$directory$1" ]
     then
         echo "$1 already exists."
     else
-        $EDITOR "$dir$1"
+        $EDITOR "$directory$1"
     fi
 }
 
 
 view () {
-
-    if directory_empty
-    then
-        echo $no_notes_message
-        return
-    fi
-
-    file=$(echo $dir$(list_files))
+    file=$(echo $directory$(list_files))
     if file_selected $file
     then
         $reader "$file"
@@ -36,14 +29,7 @@ view () {
 
 
 edit () {
-
-    if directory_empty
-    then
-        echo $no_notes_message
-        return
-    fi
-
-    file=$(echo $dir$(list_files))
+    file=$(echo $directory$(list_files))
     if file_selected $file
     then
         $EDITOR "$file"
@@ -54,17 +40,10 @@ edit () {
 
 
 remove () {
-
-    if directory_empty
-    then
-        echo $no_notes_message
-        return
-    fi
-
-    file=$(echo $dir$(list_files))
+    file=$(echo $directory$(list_files))
     if file_selected "$file"
     then
-        if yes_or_no "$file"
+        if yes_or_no "Are you sure you want to delete $file?"
         then
             rm "$file"
         fi
@@ -74,37 +53,98 @@ remove () {
 }
 
 
+push () {
+
+    cd $directory
+
+    if ! is_git_repository
+    then
+        if yes_or_no "Do you want to make $directory a git repository?"
+        then
+            git init
+        else
+            return
+        fi
+    fi
+
+    if anything_to_commit; then git add . && git commit -m "$(date)"; fi
+
+    if ! has_remote
+    then
+        if yes_or_no "No remote set. Do you want to set a GitHub repository?"
+        then
+            read -p "Repository URL: " url
+            git remote add origin "$url" && git branch -M main
+        else
+            return
+        fi
+    fi
+
+    git push -u origin main
+}
+
+
+has_remote () {
+    cd $directory
+    if [ -n "$(git remote)" ]
+    then
+        true
+    else
+        false
+    fi
+}
+
+
+anything_to_commit () {
+    if [ -n "$(git status --porcelain)" ]
+    then
+        true
+    else
+        false
+    fi
+}
+
+
+is_git_repository () {
+    if [ -d "$directory.git" ]
+    then
+        true
+    else
+        false
+    fi
+}
+
+
 list_files () {
-    \ls $dir | xargs -d '\n' -n 1 | fzf --preview "cat $dir{}" --layout=reverse
+    \ls $directory | xargs -d '\n' -n 1 | fzf --preview "cat $directory{}" --layout=reverse
 }
 
 
 directory_empty () {
-    count=$(\ls -A $dir | wc -l)
+    count=$(\ls -A $directory | wc -l)
     if [ $count -eq 0 ]
     then
-        return 0
+        echo $no_notes_message
+        true
     else
-        return 1
+        false
     fi
 }
 
 
 file_selected () {
-    if [ "$1" = "$dir" ]
+    if [ "$1" = "$directory" ]
     then
         false
-        return
     else
         true
-        return
     fi
 }
 
 
 yes_or_no () {
     while true; do
-        read -p "Are you sure you want to delete $1? [y/n]: " yn
+        read -p "$1 [y/n]: " yn
         case $yn in
             [Yy]*) return 0;;
             [Nn]*) return 1;;
@@ -113,19 +153,22 @@ yes_or_no () {
 }
 
 
-while getopts ":a:ver" option; do
+while getopts ":a:verp" option; do
     case $option in
         a)  # Add new note
             add "$OPTARG"
             exit;;
         v)  # View file in reader
-            view
+            if ! directory_empty; then view; fi
             exit;;
         e)  # Edit note
-            edit
+            if ! directory_empty; then edit; fi
             exit;;
         r)  # Remove note
-            remove
+            if ! directory_empty; then remove; fi
+            exit;;
+        p)  # Push to git repository
+            push
             exit;;
         :)  # Error message for options that require an argument
             echo "$program_name -${OPTARG} requires an argument"
@@ -137,14 +180,10 @@ while getopts ":a:ver" option; do
 done
 
 
-if directory_empty
-then
-    echo $no_notes_message
-    exit
-fi
-
-file=$(echo $dir$(list_files))
-if file_selected $file
-then
-    cat "$file"
+if ! directory_empty; then
+    file=$(echo $directory$(list_files))
+    if file_selected $file
+    then
+        cat "$file"
+    fi
 fi
