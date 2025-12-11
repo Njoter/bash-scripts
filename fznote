@@ -3,6 +3,7 @@
 program_name=$(basename "$0")
 no_notes_message="You have no notes. Create one with $program_name -a [filename]"
 no_selection_message="No file selected."
+editor=$EDITOR
 
 source ~/.config/fznote/fznote.conf
 
@@ -12,7 +13,7 @@ add () {
     then
         echo "$1 already exists."
     else
-        $EDITOR "$directory$1"
+        $editor "$directory$1"
     fi
 }
 
@@ -32,7 +33,7 @@ edit () {
     file=$(echo $directory$(list_files))
     if file_selected $file
     then
-        $EDITOR "$file"
+        $editor "$file"
     else
         echo $no_selection_message
     fi
@@ -116,7 +117,7 @@ is_git_repository () {
 
 
 list_files () {
-    \ls $directory | xargs -d '\n' -n 1 | fzf --preview "cat $directory{}" --layout=reverse
+    \ls $directory | xargs -d '\n' -n 1 | fzf --preview "$preview_reader $directory{}" --layout=reverse
 }
 
 
